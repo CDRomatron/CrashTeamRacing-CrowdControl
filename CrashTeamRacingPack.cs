@@ -375,10 +375,10 @@ namespace CrowdControl.Games.Packs
                     new Effect("No Right", "noright"){Duration=15},
                     new Effect("Backwards Camera", "camera"){Duration=15},
                     //new Effect("Invisible", "invisible"),
-                    new Effect("No Drifting", "nodrift"){Duration=20},
+                    new Effect("No Drifting/Hopping", "nodrift"){Duration=20},
                     //new Effect("-1 Lap", "minuslap")
-                    new Effect("Give Random Reward", "givereward"),
-                    new Effect("Remove Random Reward", "takereward"),
+                    new Effect("Give Random Prize", "givereward"),
+                    new Effect("Remove Random Prize", "takereward"),
                     new Effect("Icy Tracks","icy"){Duration=20}
                 };
 
@@ -390,7 +390,7 @@ namespace CrowdControl.Games.Packs
 
         public override List<Common.ItemType> ItemTypes => new List<Common.ItemType>();
 
-        public override List<ROMInfo> ROMTable => new List<ROMInfo>(new[]
+        public override ROMTable ROMTable => new List<ROMInfo>(new[]
         {
             //new ROMInfo("Mega Man 2", null, Patching.Ignore, ROMStatus.ValidPatched,s => Patching.MD5(s, "caaeb9ee3b52839de261fd16f93103e6")),
             new ROMInfo("CTR - Crash Team Racing", null, Patching.Ignore, ROMStatus.ValidPatched,s => true)
@@ -472,7 +472,7 @@ namespace CrowdControl.Games.Packs
                             && t > 1000
                             && Connector.Read8(ADDR_PAUSE, out byte p)
                             && p == (byte)PAUSE.Unpaused,
-                        () => Connector.Write8(GetSpeedAddress(), 0x00) && Connector.Freeze8(GetSpeedAddress(), 0x00) && SetSpeedAddress(GetSpeedAddress()));
+                        () => Connector.Write8(GetSpeedAddress(), 0x00) && Connector.Freeze8(GetSpeedAddress(), 0x00) && SetSpeedAddress(GetSpeedAddress()),TimeSpan.FromSeconds(10));
 
                     return;
                 case "camera":
@@ -480,14 +480,14 @@ namespace CrowdControl.Games.Packs
                     StartTimed(request,
                     () => Connector.Read8(ADDR_BACKCAM, out byte camState)
                     && camState == 0x00,
-                    () => Connector.Write8(ADDR_BACKCAM, 0xFF) && Connector.Freeze8(ADDR_BACKCAM, 0xFF));
+                    () => Connector.Write8(ADDR_BACKCAM, 0xFF) && Connector.Freeze8(ADDR_BACKCAM, 0xFF),TimeSpan.FromSeconds(15));
                     return;
                 case "nodrift":
                     Connector.SendMessage(request.DisplayViewer + " diabled drifting");
                     StartTimed(request,
                     () => Connector.Read8(ADDR_NODRIFT, out byte driftState)
                     && driftState == 0x00,
-                    () => Connector.Write8(ADDR_NODRIFT, 0xFF) && Connector.Freeze8(ADDR_NODRIFT, 0xFF));
+                    () => Connector.Write8(ADDR_NODRIFT, 0xFF) && Connector.Freeze8(ADDR_NODRIFT, 0xFF),TimeSpan.FromSeconds(20));
                     return;
                 case "noleft":
                     Connector.SendMessage(request.DisplayViewer + " disabled left turns");
@@ -496,7 +496,7 @@ namespace CrowdControl.Games.Packs
                     && revState == 0x00
                     && Connector.Read8(ADDR_NORIGHT, out byte revStateB)
                     && revStateB == 0x00,
-                    () => Connector.Write8(ADDR_NOLEFT, 0xFF) && Connector.Freeze8(ADDR_NOLEFT, 0xFF));
+                    () => Connector.Write8(ADDR_NOLEFT, 0xFF) && Connector.Freeze8(ADDR_NOLEFT, 0xFF),TimeSpan.FromSeconds(15));
                     return;
                 case "noright":
                     Connector.SendMessage(request.DisplayViewer + " disabled right turns");
@@ -505,7 +505,7 @@ namespace CrowdControl.Games.Packs
                     && revState == 0x00
                     && Connector.Read8(ADDR_NOLEFT, out byte revStateB)
                     && revStateB == 0x00,
-                    () => Connector.Write8(ADDR_NORIGHT, 0xFF) && Connector.Freeze8(ADDR_NORIGHT, 0xFF));
+                    () => Connector.Write8(ADDR_NORIGHT, 0xFF) && Connector.Freeze8(ADDR_NORIGHT, 0xFF),TimeSpan.FromSeconds(15));
                     return;
                 //case "invisible":
                 //    byte trackStorageA = 0;
@@ -532,7 +532,7 @@ namespace CrowdControl.Games.Packs
                 //    ;
                 //    return;
                 case "givereward":
-                    Connector.SendMessage(request.DisplayViewer + " gave you a random reward");
+                    Connector.SendMessage(request.DisplayViewer + " gave you a random prize");
                     TryEffect(
                         request,
                         () => (Connector.Read32(ADDR_AWARDA, out uint awarda)
@@ -544,7 +544,7 @@ namespace CrowdControl.Games.Packs
                         () => GiveReward());
                     return;
                 case "takereward":
-                    Connector.SendMessage(request.DisplayViewer + " took a random award");
+                    Connector.SendMessage(request.DisplayViewer + " took a random prize");
                     TryEffect(
                         request,
                         () => (Connector.Read32(ADDR_AWARDA, out uint awarda)
@@ -559,9 +559,8 @@ namespace CrowdControl.Games.Packs
                     uint state = 0;
                     Connector.SendMessage(request.DisplayViewer + " made it icy");
                     StartTimed(request,
-                    () => Connector.Read32(ADDR_CHEATS, out state)
-                    && (state | 0x80000) > state,
-                    () => Connector.Write32(ADDR_CHEATS, (state | 0x80000)));
+                    () => Connector.Read32(ADDR_CHEATS, out state) && (state | 0x80000) > state,
+                    () => Connector.Write32(ADDR_CHEATS, (state | 0x80000)),TimeSpan.FromSeconds(20));
                     return;
             }
 
